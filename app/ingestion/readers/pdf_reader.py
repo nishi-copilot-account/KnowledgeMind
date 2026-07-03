@@ -6,11 +6,16 @@ from app.knowledge.models import (
     KnowledgeDocument,
     KnowledgeMetadata,
     KnowledgePage,
-   )
+)
 
 from app.ingestion.readers.base_reader import BaseReader
+from app.ingestion.processors.metadata_processor import MetadataProcessor
+from app.ingestion.processors.text_processor import TextProcessor
+from app.ingestion.processors.image_processor import ImageProcessor
+print("DEBUG: ImageProcessor =", ImageProcessor)
 
 from app.utils.logger import logger
+
 
 class PDFReader(BaseReader):
     def read(self, file_path: str) -> KnowledgeDocument:
@@ -29,29 +34,34 @@ class PDFReader(BaseReader):
 
         try:
             pdf = fitz.open(path)
-            #image_processor = ImageProcessor()
-            #page_images = image_processor.process(pdf)
+            
         except Exception as ex:
-          logger.exception("Unable to open PDF")
-          raise RuntimeError(f"{path.name} is not a valid PDF.") from ex
+            logger.exception("Unable to open PDF")
+            raise RuntimeError(f"{path.name} is not a valid PDF.") from ex
 
-        metadata = KnowledgeMetadata(
-            title=pdf.metadata.get("title", ""),
-            author=pdf.metadata.get("author", ""),
-            subject=pdf.metadata.get("subject", ""),
-            keywords=pdf.metadata.get("keywords", ""),
-            page_count=len(pdf),
-        )
+            # Processors run after the PDF is successfully opened
+         # Initialize processors   
+        metadata_processor = MetadataProcessor()
+        text_processor = TextProcessor()
+        image_processor = ImageProcessor()
 
+        # Process metadata
+        metadata = metadata_processor.process(pdf)
+        # Process images
+        page_images = image_processor.process(pdf)
+
+        
         pages = []
 
         for index, page in enumerate(pdf):
+            raw_text = page.get_text()
+            clean_text = text_processor.process(raw_text)
             pages.append(
                 KnowledgePage(
                     page_number=index + 1,
-                    text=page.get_text(),
-                    #images=page_images.get(index + 1, []),
-                    images=[],
+                    text=clean_text,
+                    images=page_images.get(index + 1, []),
+                    
                 )
             )
 

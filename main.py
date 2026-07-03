@@ -26,7 +26,9 @@ def main():
 
         print(f"Images : {len(page.images)}")
 
-       # print(f"Tables : {len(page.tables)}")
+    for image in page.images:
+
+        print(image["path"])
 
 
 if __name__ == "__main__":

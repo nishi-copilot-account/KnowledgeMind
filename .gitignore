@@ -1,5 +1,39 @@
-.venv/
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual Environment
+.venv/
+venv/
+
+# VS Code
+.vscode/
+
+# Pytest
+.pytest_cache/
+
+# Coverage
+.coverage
+htmlcov/
+
+# Logs
+*.log
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Environment Variables
 .env
-data/vector_store/
+
+# Build
+dist/
+build/
+
+# Extracted Images (generated during execution)
+data/extracted_images/
+
+# Jupyter
+.ipynb_checkpoints/
