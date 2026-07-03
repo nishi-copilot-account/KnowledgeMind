@@ -1,36 +1,32 @@
-import pdfplumber
+"""
+OCR Processor for KnowledgeMind.
 
-from app.knowledge.models import KnowledgeTable
+Extracts text from images using Tesseract OCR.
+"""
+
+from pathlib import Path
+
+import pytesseract
+from PIL import Image
+
+from app.config.settings import TESSERACT_PATH
 
 
-class TableProcessor:
+class OCRProcessor:
 
-    def process(self, pdf_path):
+    def __init__(self):
 
-        tables = {}
+        pytesseract.pytesseract.tesseract_cmd = str(
+            TESSERACT_PATH
+        )
 
-        with pdfplumber.open(pdf_path) as pdf:
+    def process(self, image_path: str) -> str:
+        """
+        Extract text from an image.
+        """
 
-            for page_no, page in enumerate(pdf.pages, start=1):
+        image = Image.open(Path(image_path))
 
-                extracted = page.extract_tables()
+        text = pytesseract.image_to_string(image)
 
-                page_tables = []
-
-                for table in extracted:
-
-                    page_tables.append(
-
-                        KnowledgeTable(
-
-                            page=page_no,
-
-                            rows=table,
-
-                        )
-
-                    )
-
-                tables[page_no] = page_tables
-
-        return tables
+        return text.strip()
