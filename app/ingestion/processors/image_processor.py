@@ -6,7 +6,7 @@ from app.knowledge.models import KnowledgeImage
 from app.utils.logger import logger
 
 
-class ImageExtractor:
+class ImageProcessor:
 
     def __init__(self):
 
@@ -17,7 +17,7 @@ class ImageExtractor:
             exist_ok=True,
         )
 
-    def extract(self, pdf):
+    def process(self, pdf):
 
         extracted = {}
 
@@ -65,8 +65,6 @@ class ImageExtractor:
         "image_path": str(image_path),
     }
 )
-
-                
 
             extracted[page_number + 1] = images
 

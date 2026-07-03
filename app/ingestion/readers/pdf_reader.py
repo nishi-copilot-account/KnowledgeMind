@@ -2,18 +2,18 @@ from pathlib import Path
 
 import fitz
 
-from app.ingestion.models import (
-    ParsedDocument,
-    DocumentMetadata,
-    DocumentPage,
-)
+from app.knowledge.models import (
+    KnowledgeDocument,
+    KnowledgeMetadata,
+    KnowledgePage,
+   )
 
 from app.ingestion.readers.base_reader import BaseReader
+
 from app.utils.logger import logger
 
-
 class PDFReader(BaseReader):
-    def read(self, file_path: str) -> ParsedDocument:
+    def read(self, file_path: str) -> KnowledgeDocument:
         path = Path(file_path)
 
         if not path.exists():
@@ -29,11 +29,13 @@ class PDFReader(BaseReader):
 
         try:
             pdf = fitz.open(path)
+            #image_processor = ImageProcessor()
+            #page_images = image_processor.process(pdf)
         except Exception as ex:
-            logger.error("Unable to open PDF: %s", ex)
-            raise RuntimeError(f"{path.name} is not a valid PDF document.")
+          logger.exception("Unable to open PDF")
+          raise RuntimeError(f"{path.name} is not a valid PDF.") from ex
 
-        metadata = DocumentMetadata(
+        metadata = KnowledgeMetadata(
             title=pdf.metadata.get("title", ""),
             author=pdf.metadata.get("author", ""),
             subject=pdf.metadata.get("subject", ""),
@@ -45,15 +47,17 @@ class PDFReader(BaseReader):
 
         for index, page in enumerate(pdf):
             pages.append(
-                DocumentPage(
+                KnowledgePage(
                     page_number=index + 1,
                     text=page.get_text(),
+                    #images=page_images.get(index + 1, []),
+                    images=[],
                 )
             )
 
         logger.info("PDF Loaded Successfully")
 
-        return ParsedDocument(
+        return KnowledgeDocument(
             filename=path.name,
             metadata=metadata,
             pages=pages,

@@ -1,11 +1,11 @@
 import pdfplumber
 
-from app.ingestion.models import DocumentTable
+from app.knowledge.models import KnowledgeTable
 
 
-class TableExtractor:
+class TableProcessor:
 
-    def extract(self, pdf_path):
+    def process(self, pdf_path):
 
         tables = {}
 
@@ -21,7 +21,7 @@ class TableExtractor:
 
                     page_tables.append(
 
-                        DocumentTable(
+                        KnowledgeTable(
 
                             page=page_no,
 

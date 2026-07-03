@@ -1,33 +1,33 @@
-from app.ingestion.readers.factory import ReaderFactory
+from app.ingestion.pipeline import KnowledgePipeline
 
 
 def main():
 
-    reader = ReaderFactory.get_reader(
+    pipeline = KnowledgePipeline()
+
+    knowledge = pipeline.process(
         "data/documents/sample.pdf"
     )
 
-    document = reader.read(
-        "data/documents/sample.pdf"
-    )
-
-    print()
-
+    print("=" * 60)
+    print(f"Source : {knowledge.filename}")
+    print(f"Pages  : {knowledge.metadata.page_count}")
     print("=" * 60)
 
-    print(document.filename)
+    for page in knowledge.pages:
 
-    print(document.metadata)
+        print(f"\nPage : {page.page_number}")
 
-    print("=" * 60)
+        print("-" * 40)
 
-    for page in document.pages:
-
-        print(f"Page {page.page_number}")
-
-        print(page.text[:200])
+        print(page.text[:250])
 
         print()
+
+        print(f"Images : {len(page.images)}")
+
+       # print(f"Tables : {len(page.tables)}")
+
 
 if __name__ == "__main__":
     main()

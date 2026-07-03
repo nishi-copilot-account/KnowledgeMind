@@ -1,15 +1,15 @@
 import fitz
 
-from app.ingestion.models import DocumentMetadata
+from app.knowledge.models import KnowledgeMetadata
 
 
-class MetadataExtractor:
+class MetadataProcessor:
 
-    def extract(self, pdf):
+    def process(self, pdf):
 
         metadata = pdf.metadata
 
-        return DocumentMetadata(
+        return KnowledgeMetadata(
 
             title=metadata.get("title", ""),
 
