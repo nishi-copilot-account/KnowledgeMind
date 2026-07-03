@@ -1,39 +1,54 @@
+# ----------------------------
 # Python
+# ----------------------------
 __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
+*.egg-info/
 
+# ----------------------------
 # Virtual Environment
+# ----------------------------
 .venv/
 venv/
+env/
 
-# VS Code
+# ----------------------------
+# IDE
+# ----------------------------
 .vscode/
+.idea/
 
-# Pytest
-.pytest_cache/
-
-# Coverage
-.coverage
-htmlcov/
-
-# Logs
-*.log
-
+# ----------------------------
 # OS Files
+# ----------------------------
 .DS_Store
 Thumbs.db
 
+# ----------------------------
+# Logs
+# ----------------------------
+*.log
+
+# ----------------------------
 # Environment Variables
+# ----------------------------
 .env
 
-# Build
-dist/
-build/
-
-# Extracted Images (generated during execution)
+# ----------------------------
+# Extracted Images
+# ----------------------------
 data/extracted_images/
 
-# Jupyter
-.ipynb_checkpoints/
+# ----------------------------
+# Python Cache
+# ----------------------------
+.pytest_cache/
+.mypy_cache/
+
+# ----------------------------
+# Build
+# ----------------------------
+build/
+dist/
