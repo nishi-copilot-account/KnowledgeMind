@@ -12,7 +12,7 @@ from app.ingestion.readers.base_reader import BaseReader
 from app.ingestion.processors.metadata_processor import MetadataProcessor
 from app.ingestion.processors.text_processor import TextProcessor
 from app.ingestion.processors.image_processor import ImageProcessor
-print("DEBUG: ImageProcessor =", ImageProcessor)
+from app.ingestion.processors.table_processor import TableProcessor
 
 from app.utils.logger import logger
 
@@ -44,13 +44,14 @@ class PDFReader(BaseReader):
         metadata_processor = MetadataProcessor()
         text_processor = TextProcessor()
         image_processor = ImageProcessor()
+        table_processor = TableProcessor()
 
         # Process metadata
         metadata = metadata_processor.process(pdf)
         # Process images
         page_images = image_processor.process(pdf)
-
-        
+        # Process tables 
+        page_tables = table_processor.process(str(path))
         pages = []
 
         for index, page in enumerate(pdf):
@@ -61,7 +62,7 @@ class PDFReader(BaseReader):
                     page_number=index + 1,
                     text=clean_text,
                     images=page_images.get(index + 1, []),
-                    
+                    tables=page_tables.get(index + 1, []),
                 )
             )
 

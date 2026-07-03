@@ -4,14 +4,36 @@ from dataclasses import dataclass, field
 from typing import Optional, List
 from datetime import datetime
 
+@dataclass
+class KnowledgeImage:
+    """Represents an extracted image from a document."""
+
+    page: int
+    path: str
+    ocr_text: str = ""
+
+
+@dataclass
+class KnowledgeTable:
+    """
+    Represents a table extracted from a document.
+    """
+
+    page: int
+
+    title: str = ""
+    rows: List[List[str]] = field(default_factory=list)
 
 @dataclass
 class KnowledgePage:
-    """Represents a page in a document."""
 
     page_number: int
+
     text: str
-    images: List[dict] = field(default_factory=list)
+
+    images: List[KnowledgeImage] = field(default_factory=list)
+
+    tables: List[KnowledgeTable] = field(default_factory=list)
 
 
 @dataclass

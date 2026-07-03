@@ -1,8 +1,9 @@
 """
 Extract images from PDF pages.
 """
-
+from app.ingestion.processors.ocr_processor import OCRProcessor
 from pathlib import Path
+from app.knowledge.models import KnowledgeImage
 
 import fitz
 
@@ -17,6 +18,7 @@ class ImageProcessor:
             parents=True,
             exist_ok=True,
         )
+        self.ocr_processor = OCRProcessor()
 
     def process(self, pdf):
 
@@ -54,12 +56,13 @@ class ImageProcessor:
                 pix.save(image_path)
 
                 pix = None
-
+                ocr_text = self.ocr_processor.process(str(image_path))
                 extracted.append(
-                    {
-                        "page": page_index + 1,
-                        "path": str(image_path),
-                    }
+                    KnowledgeImage(
+                        page=page_index + 1,
+                        path=str(image_path),
+                        ocr_text=ocr_text,
+                    )
                 )
 
             page_images[page_index + 1] = extracted

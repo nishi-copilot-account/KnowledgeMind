@@ -6,7 +6,7 @@ def main():
     pipeline = KnowledgePipeline()
 
     knowledge = pipeline.process(
-        "data/documents/sample.pdf"
+        "data/documents/test_club.pdf"
     )
 
     print("=" * 60)
@@ -17,18 +17,39 @@ def main():
     for page in knowledge.pages:
 
         print(f"\nPage : {page.page_number}")
-
         print("-" * 40)
 
+        # Display page text
         print(page.text[:250])
 
-        print()
+        # -----------------------------
+        # Images
+        # -----------------------------
+        print(f"\nImages : {len(page.images)}")
 
-        print(f"Images : {len(page.images)}")
+        for index, image in enumerate(page.images, start=1):
 
-    for image in page.images:
+            print(f"\nImage {index}")
+            print(f"Path : {image.path}")
 
-        print(image["path"])
+            print("\nOCR Text:")
+            print(image.ocr_text)
+
+            print("-" * 60)
+
+        # -----------------------------
+        # Tables
+        # -----------------------------
+        print(f"\nTables : {len(page.tables)}")
+
+        for table_index, table in enumerate(page.tables, start=1):
+
+            print(f"\nTable {table_index}")
+
+            for row in table.rows:
+                print(row)
+
+            print("-" * 60)
 
 
 if __name__ == "__main__":
