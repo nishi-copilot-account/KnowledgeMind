@@ -1,59 +1,81 @@
-"""DOCX document reader module."""
+"""
+DOCX document reader.
+"""
 
 from pathlib import Path
 
 from docx import Document
 
+from app.ingestion.readers.base_reader import BaseReader
 from app.knowledge.models import (
     KnowledgeDocument,
     KnowledgeMetadata,
     KnowledgePage,
 )
-
-from app.ingestion.readers.base_reader import BaseReader
 from app.utils.logger import logger
 
 
 class DOCXReader(BaseReader):
+    """
+    Reads Microsoft Word (.docx) documents.
+    """
+
     def read(self, file_path: str) -> KnowledgeDocument:
+
         path = Path(file_path)
 
         if not path.exists():
             raise FileNotFoundError(f"{path} does not exist.")
 
-        logger.info("Opening DOCX: %s", path.name)
+        if path.stat().st_size == 0:
+            raise ValueError(f"{path.name} is empty.")
 
-        try:
-            doc = Document(path)
-        except Exception as ex:
-            logger.error("Unable to open DOCX: %s", ex)
-            raise RuntimeError(f"{path.name} is not a valid DOCX document.")
+        logger.info("Opening DOCX : %s", path.name)
+
+        document = Document(path)
+
+        paragraphs = []
+
+        for paragraph in document.paragraphs:
+
+            text = paragraph.text.strip()
+
+            if not text:
+                continue
+
+            if paragraph.style.name.startswith("Heading"):
+                paragraphs.append(f"\n{text}\n")
+            else:
+                paragraphs.append(text)
+
+        page_text = "\n".join(paragraphs)
+
+        core = document.core_properties
 
         metadata = KnowledgeMetadata(
-            title=doc.core_properties.title or "",
-            author=doc.core_properties.author or "",
-            subject=doc.core_properties.subject or "",
-            keywords=doc.core_properties.keywords or "",
-            page_count=len(doc.paragraphs),
-        )
+            title=core.title or path.stem,
+            author=core.author or "",
+            subject=core.subject or "",
+            keywords=core.keywords or "",
+            page_count=1,
+      )
 
-        pages = []
-        text_content = []
-
-        for paragraph in doc.paragraphs:
-            text_content.append(paragraph.text)
-
-        pages.append(
-            KnowledgePage(
-                page_number=1,
-                text="\n".join(text_content),
-            )
+        page = KnowledgePage(
+            page_number=1,
+            text=page_text,
         )
 
         logger.info("DOCX Loaded Successfully")
 
+        # TODO:
+        # Extract embedded images from DOCX.
+        # Reuse ImageProcessor + OCRProcessor.
+
+        # TODO:
+        # Extract Word tables into KnowledgeTable objects.
+
         return KnowledgeDocument(
             filename=path.name,
             metadata=metadata,
-            pages=pages,
+            pages=[page],
         )

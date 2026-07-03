@@ -1,0 +1,7 @@
+KnowledgeMind TXT Test
+
+This is a plain text document.
+
+Sprint 2 is progressing well.
+
+TXT files should be processed exactly like PDFs and DOCX files.
