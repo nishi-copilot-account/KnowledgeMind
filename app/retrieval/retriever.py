@@ -1,21 +1,31 @@
-"""Retriever component for querying the knowledge base."""
+"""
+Semantic retriever.
+"""
 
-from typing import List, Dict, Any
+from app.retrieval.embedding_service import EmbeddingService
+from app.retrieval.vector_store import VectorStore
 
 
-class Retriever:
-    """Retrieves relevant documents from the knowledge base."""
+class KnowledgeRetriever:
+    """
+    Retrieves relevant knowledge from ChromaDB.
+    """
 
-    def __init__(self, vector_store=None):
-        self.vector_store = vector_store
+    def __init__(self):
 
-    def retrieve(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
-        """Retrieve documents relevant to the query."""
-        if self.vector_store:
-            return self.vector_store.search(query, top_k=top_k)
-        return []
+        self.embedding_service = EmbeddingService()
 
-    def retrieve_with_scores(self, query: str, top_k: int = 5) -> List[tuple]:
-        """Retrieve documents with relevance scores."""
-        results = self.retrieve(query, top_k)
-        return [(doc, 0.95) for doc in results]
+        self.vector_store = VectorStore()
+
+    def retrieve(
+        self,
+        question: str,
+        top_k: int = 5,
+    ):
+
+        embedding = self.embedding_service.embed(question)
+
+        return self.vector_store.search(
+            embedding,
+            top_k,
+        )
