@@ -1,11 +1,12 @@
 from app.services.indexing_service import IndexingService
 from app.services.knowledge_service import KnowledgeService
-
+from app.services.statistics_service import StatisticsService
 
 def main():
 
     indexing_service = IndexingService()
     knowledge_service = KnowledgeService()
+    statistics_service = StatisticsService()
 
     while True:
 
@@ -15,7 +16,8 @@ def main():
 
         print("1. Index Document")
         print("2. Ask Question")
-        print("3. Exit")
+        print("3. Collection Statistics")
+        print("4. Exit")
 
         choice = input("\nChoose: ")
 
@@ -58,7 +60,7 @@ def main():
                     f"(Page {result.chunk.page_number})"
                 )
 
-        elif choice == "3":
+        elif choice == "4":
 
             print("\nGoodbye!")
 

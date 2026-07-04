@@ -17,13 +17,31 @@ class IndexingService:
         self.embedding_service = EmbeddingService()
         self.vector_store = VectorStore()
 
-    def index_document(self, file_path: str):
+    def index_document(
+        self,
+        file_path: str,
+    ):
 
         print("\nProcessing document...")
 
         knowledge = self.pipeline.process(file_path)
 
-        chunks = self.chunk_builder.build(knowledge)
+        # ---------------------------------------
+        # Skip duplicate documents
+        # ---------------------------------------
+
+        if self.vector_store.document_exists(
+            knowledge.filename,
+        ):
+
+            print("\nDocument already indexed.")
+            print("Skipping duplicate indexing.")
+
+            return
+
+        chunks = self.chunk_builder.build(
+            knowledge
+        )
 
         for chunk in chunks:
 

@@ -103,3 +103,42 @@ class VectorStore:
             )
 
         return search_results
+
+    def document_exists(
+        self,
+        document_name: str,
+    ) -> bool:
+        """
+        Check whether a document has already been indexed.
+        """
+
+        results = self.collection.get(
+            where={
+                "source_document": document_name,
+            }
+        )
+
+        return len(results["ids"]) > 0
+
+
+    def statistics(self) -> dict:
+        """
+        Return collection statistics.
+        """
+
+        results = self.collection.get()
+
+        metadatas = results["metadatas"]
+
+        documents = sorted(
+            {
+                metadata["source_document"]
+                for metadata in metadatas
+            }
+        )
+
+        return {
+            "documents": documents,
+            "document_count": len(documents),
+            "chunk_count": len(results["ids"]),
+        }

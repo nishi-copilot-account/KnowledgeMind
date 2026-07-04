@@ -1,22 +1,40 @@
-"""Planner agent for query planning and orchestration."""
+"""
+Planner Agent.
 
-from typing import Dict, Any
+Decides how a user question should be processed.
+"""
+
+from app.agents.base_agent import BaseAgent
 
 
-class PlannerAgent:
-    """Agent responsible for planning query strategy."""
+class PlannerAgent(BaseAgent):
 
-    def __init__(self):
-        self.name = "PlannerAgent"
-        self.description = "Plans the reasoning strategy"
+    def execute(
+        self,
+        question: str,
+    ) -> str:
+        """
+        Decide which workflow should answer the question.
+        """
 
-    def process(self, query: str) -> Dict[str, Any]:
-        """Process a query and create an execution plan."""
-        return {
-            "agent": self.name,
-            "query": query,
-            "plan": {
-                "steps": ["retrieve", "reason", "synthesize"],
-                "priority": "high"
-            }
-        }
+        question = question.lower()
+
+        if any(
+            word in question
+            for word in [
+                "summarize",
+                "summary",
+            ]
+        ):
+            return "summarize"
+
+        if any(
+            word in question
+            for word in [
+                "compare",
+                "difference",
+            ]
+        ):
+            return "reason"
+
+        return "retrieve"
