@@ -1,22 +1,20 @@
 """
-LLM service for KnowledgeMind.
+LLM service using Ollama.
 """
 
-import os
+import ollama
 
-from openai import OpenAI
+from app.utils.logger import logger
 
 
 class LLMService:
     """
-    Wrapper around an LLM provider.
+    Wrapper around Ollama.
     """
 
     def __init__(self):
 
-        self.client = OpenAI(
-            api_key=os.getenv("OPENAI_API_KEY")
-        )
+        self.model = "llama3.2:3b"
 
     def generate(
         self,
@@ -30,9 +28,9 @@ class LLMService:
         prompt = f"""
 You are KnowledgeMind.
 
-Answer ONLY using the provided context.
+Answer ONLY using the context below.
 
-If the answer is not present, say:
+If the answer cannot be found, say:
 
 "I couldn't find this information in the indexed knowledge."
 
@@ -45,8 +43,10 @@ Question:
 {question}
 """
 
-        response = self.client.chat.completions.create(
-            model="gpt-4.1-mini",
+        logger.info("Generating response using Ollama")
+
+        response = ollama.chat(
+            model=self.model,
             messages=[
                 {
                     "role": "user",
@@ -55,4 +55,4 @@ Question:
             ],
         )
 
-        return response.choices[0].message.content
+        return response["message"]["content"]
