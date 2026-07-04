@@ -6,7 +6,7 @@ Coordinates retrieval and LLM generation.
 
 from app.llm.llm_service import LLMService
 from app.retrieval.retriever import KnowledgeRetriever
-
+from app.knowledge.response import KnowledgeResponse
 
 class KnowledgeService:
     """
@@ -19,18 +19,20 @@ class KnowledgeService:
 
         self.llm = LLMService()
 
+    
+
     def ask(
         self,
         question: str,
         top_k: int = 3,
-    ) -> str:
+    ) -> KnowledgeResponse:
         """
-        Ask a question about the indexed knowledge.
+        Ask a question about indexed knowledge.
         """
 
         results = self.retriever.retrieve(
-            question,
-            top_k,
+        question,
+        top_k,
         )
 
         context = "\n\n".join(
@@ -38,7 +40,12 @@ class KnowledgeService:
             for result in results
         )
 
-        return self.llm.generate(
+        answer = self.llm.generate(
             question=question,
             context=context,
+        )
+
+        return KnowledgeResponse(
+            answer=answer,
+            sources=results,
         )
