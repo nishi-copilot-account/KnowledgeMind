@@ -1,12 +1,14 @@
 """
-Knowledge service.
+Knowledge Service.
 
-Coordinates retrieval and LLM generation.
+Uses the LangGraph workflow to answer questions.
 """
 
-from app.llm.llm_service import LLMService
-from app.retrieval.retriever import KnowledgeRetriever
+from app.graph.workflow import KnowledgeWorkflow
+from app.graph.state import KnowledgeState
 from app.knowledge.response import KnowledgeResponse
+from app.memory.conversation_memory import ConversationMemory
+
 
 class KnowledgeService:
     """
@@ -15,37 +17,58 @@ class KnowledgeService:
 
     def __init__(self):
 
-        self.retriever = KnowledgeRetriever()
+        self.workflow = (
+            KnowledgeWorkflow()
+            .compile()
+        )
 
-        self.llm = LLMService()
-
-    
+        self.memory = ConversationMemory()
 
     def ask(
         self,
         question: str,
-        top_k: int = 3,
     ) -> KnowledgeResponse:
         """
-        Ask a question about indexed knowledge.
+        Ask a question using the LangGraph workflow.
         """
 
-        results = self.retriever.retrieve(
-        question,
-        top_k,
-        )
+        # ----------------------------------
+        # Build workflow state
+        # ----------------------------------
 
-        context = "\n\n".join(
-            result.chunk.text
-            for result in results
-        )
-
-        answer = self.llm.generate(
+        state = KnowledgeState(
+            original_question=question,
             question=question,
-            context=context,
+            history=self.memory.context(),
+            action="",
+            search_results=[],
+            context="",
+            answer="",
+        )
+
+        # ----------------------------------
+        # Execute workflow
+        # ----------------------------------
+
+        result = self.workflow.invoke(state)
+
+        answer = result["answer"]
+
+        sources = result.get(
+            "search_results",
+            [],
+        )
+
+        # ----------------------------------
+        # Save conversation
+        # ----------------------------------
+
+        self.memory.add(
+            question,
+            answer,
         )
 
         return KnowledgeResponse(
             answer=answer,
-            sources=results,
+            sources=sources,
         )

@@ -5,27 +5,16 @@ def main():
 
     planner = PlannerAgent()
 
-    questions = [
+    while True:
 
-        "What is John's salary?",
+        question = input("\nQuestion: ")
 
-        "Summarize this document",
+        if question == "exit":
+            break
 
-        "Compare John and Alice",
+        action = planner.plan(question)
 
-        "Difference between HR and IT",
-
-    ]
-
-    for question in questions:
-
-        action = planner.execute(question)
-
-        print(f"{question}")
-
-        print(f"Action : {action}")
-
-        print("-" * 50)
+        print("\nPlanner chose:", action)
 
 
 if __name__ == "__main__":
