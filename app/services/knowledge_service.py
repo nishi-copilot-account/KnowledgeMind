@@ -1,74 +1,86 @@
-"""
-Knowledge Service.
-
-Uses the LangGraph workflow to answer questions.
-"""
-
-from app.graph.workflow import KnowledgeWorkflow
-from app.graph.state import KnowledgeState
-from app.knowledge.response import KnowledgeResponse
-from app.memory.conversation_memory import ConversationMemory
-
-
-class KnowledgeService:
     """
-    Main service for answering knowledge questions.
+    Knowledge Service.
+
+    Uses the LangGraph workflow to answer questions.
     """
 
-    def __init__(self):
+    from app.graph.workflow import KnowledgeWorkflow
+    from app.graph.state import KnowledgeState
+    from app.knowledge.response import KnowledgeResponse
+    from app.memory.conversation_memory import ConversationMemory
 
-        self.workflow = (
-            KnowledgeWorkflow()
-            .compile()
-        )
 
-        self.memory = ConversationMemory()
-
-    def ask(
-        self,
-        question: str,
-    ) -> KnowledgeResponse:
+    class KnowledgeService:
         """
-        Ask a question using the LangGraph workflow.
+        Main service for answering knowledge questions.
         """
 
-        # ----------------------------------
-        # Build workflow state
-        # ----------------------------------
+        def __init__(self):
 
-        state = KnowledgeState(
-            original_question=question,
-            question=question,
-            history=self.memory.context(),
-            action="",
-            search_results=[],
-            context="",
-            answer="",
+            self.workflow = (
+                KnowledgeWorkflow()
+                .compile()
+            )
+
+            self.memory = ConversationMemory()
+
+        def ask(
+            self,
+            question: str,
+        ) -> KnowledgeResponse:
+            """
+            Ask a question using the LangGraph workflow.
+            """
+
+            # ----------------------------------
+            # Build workflow state
+            # ----------------------------------
+
+            state = KnowledgeState(
+                original_question=question,
+                question=question,
+                history=self.memory.context(),
+                action="",
+                search_results=[],
+                context="",
+                answer="",
+                workflow_steps=[],
+            )
+
+            # ----------------------------------
+            # Execute workflow
+            # ----------------------------------
+
+            result = self.workflow.invoke(state)
+
+            answer = result["answer"]
+
+            workflow = result.get(
+                "workflow_steps",
+                [],
         )
 
-        # ----------------------------------
-        # Execute workflow
-        # ----------------------------------
+            sources = result.get(
+                "search_results",
+                [],
+            )
 
-        result = self.workflow.invoke(state)
+            workflow = result.get(
+                "workflow_steps",
+                [],
+            )
 
-        answer = result["answer"]
+            # ----------------------------------
+            # Save conversation
+            # ----------------------------------
 
-        sources = result.get(
-            "search_results",
-            [],
-        )
+            self.memory.add(
+                question,
+                answer,
+            )
 
-        # ----------------------------------
-        # Save conversation
-        # ----------------------------------
-
-        self.memory.add(
-            question,
-            answer,
-        )
-
-        return KnowledgeResponse(
-            answer=answer,
-            sources=sources,
-        )
+            return KnowledgeResponse(
+                answer=answer,
+                sources=sources,
+                workflow=workflow,
+            )

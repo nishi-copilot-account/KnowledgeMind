@@ -6,14 +6,28 @@ from app.retrieval.vector_store import VectorStore
 
 
 class StatisticsService:
+    """
+    Provides collection statistics for both
+    the console application and Streamlit UI.
+    """
 
     def __init__(self):
 
         self.vector_store = VectorStore()
 
-    def show(self):
+    def statistics(self) -> dict:
+        """
+        Return collection statistics.
+        """
 
-        stats = self.vector_store.statistics()
+        return self.vector_store.statistics()
+
+    def show(self):
+        """
+        Print statistics to the console.
+        """
+
+        stats = self.statistics()
 
         print("\n" + "=" * 60)
         print("Knowledge Collection")
@@ -27,8 +41,10 @@ class StatisticsService:
         print("\nIndexed Documents\n")
 
         if not stats["documents"]:
+
             print("No documents indexed.")
             return
 
         for document in stats["documents"]:
+
             print(f"• {document}")

@@ -47,59 +47,21 @@ class KnowledgeWorkflow:
         # Nodes
         # -------------------------------------------------
 
-        self.graph.add_node(
-            "plan",
-            self.plan_node,
-        )
-
-        self.graph.add_node(
-            "chat",
-            self.chat_node,
-        )
-
-        self.graph.add_node(
-            "summarize",
-            self.summarize_node,
-        )
-
-        self.graph.add_node(
-            "compare",
-            self.compare_node,
-        )
-
-        self.graph.add_node(
-            "rewrite",
-            self.rewrite_node,
-        )
-
-        self.graph.add_node(
-            "retrieve",
-            self.retrieve_node,
-        )
-
-        self.graph.add_node(
-            "reason",
-            self.reason_node,
-        )
-
-        self.graph.add_node(
-            "analyze",
-            self.analyze_node,
-        )
-
-        self.graph.add_node(
-            "generate",
-            self.generate_node,
-        )
+        self.graph.add_node("plan", self.plan_node)
+        self.graph.add_node("chat", self.chat_node)
+        self.graph.add_node("summarize", self.summarize_node)
+        self.graph.add_node("compare", self.compare_node)
+        self.graph.add_node("rewrite", self.rewrite_node)
+        self.graph.add_node("retrieve", self.retrieve_node)
+        self.graph.add_node("reason", self.reason_node)
+        self.graph.add_node("analyze", self.analyze_node)
+        self.graph.add_node("generate", self.generate_node)
 
         # -------------------------------------------------
         # Edges
         # -------------------------------------------------
 
-        self.graph.add_edge(
-            START,
-            "plan",
-        )
+        self.graph.add_edge(START, "plan")
 
         self.graph.add_conditional_edges(
             "plan",
@@ -112,45 +74,30 @@ class KnowledgeWorkflow:
             },
         )
 
-        self.graph.add_edge(
-            "chat",
-            END,
-        )
+        self.graph.add_edge("chat", END)
+        self.graph.add_edge("summarize", END)
+        self.graph.add_edge("compare", END)
 
-        self.graph.add_edge(
-            "summarize",
-            END,
-        )
+        self.graph.add_edge("rewrite", "retrieve")
+        self.graph.add_edge("retrieve", "reason")
+        self.graph.add_edge("reason", "analyze")
+        self.graph.add_edge("analyze", "generate")
+        self.graph.add_edge("generate", END)
 
-        self.graph.add_edge(
-            "compare",
-            END,
-        )
+    ###########################################################
+    # Helper
+    ###########################################################
 
-        self.graph.add_edge(
-            "rewrite",
-            "retrieve",
-        )
+    def _add_workflow_step(
+        self,
+        state: KnowledgeState,
+        step: str,
+    ) -> None:
 
-        self.graph.add_edge(
-            "retrieve",
-            "reason",
-        )
-
-        self.graph.add_edge(
-            "reason",
-            "analyze",
-        )
-
-        self.graph.add_edge(
-            "analyze",
-            "generate",
-        )
-
-        self.graph.add_edge(
-            "generate",
-            END,
-        )
+        state.setdefault(
+            "workflow_steps",
+            [],
+        ).append(step)
 
     ###########################################################
     # Planner
@@ -177,6 +124,11 @@ class KnowledgeWorkflow:
 
         state["action"] = action
 
+        self._add_workflow_step(
+            state,
+            "🧠 Planner",
+        )
+
         return state
 
     ###########################################################
@@ -199,6 +151,11 @@ class KnowledgeWorkflow:
 
         state["answer"] = self.chat_agent.respond(
             state["question"],
+        )
+
+        self._add_workflow_step(
+            state,
+            "💬 Chat Agent",
         )
 
         return state
@@ -228,6 +185,11 @@ class KnowledgeWorkflow:
 
         state["answer"] = self.summary_agent.summarize(
             context,
+        )
+
+        self._add_workflow_step(
+            state,
+            "📝 Summary Agent",
         )
 
         return state
@@ -260,6 +222,11 @@ class KnowledgeWorkflow:
             context,
         )
 
+        self._add_workflow_step(
+            state,
+            "⚖️ Compare Agent",
+        )
+
         return state
 
     ###########################################################
@@ -288,6 +255,11 @@ class KnowledgeWorkflow:
 
         state["question"] = rewritten
 
+        self._add_workflow_step(
+            state,
+            "✍️ Question Rewriter",
+        )
+
         return state
 
     ###########################################################
@@ -309,6 +281,11 @@ class KnowledgeWorkflow:
         )
 
         state["search_results"] = results
+
+        self._add_workflow_step(
+            state,
+            "🔍 Retriever",
+        )
 
         return state
 
@@ -337,6 +314,11 @@ class KnowledgeWorkflow:
 
         state["context"] = context
 
+        self._add_workflow_step(
+            state,
+            "🧠 Reasoning Agent",
+        )
+
         return state
 
     ###########################################################
@@ -357,6 +339,11 @@ class KnowledgeWorkflow:
             question=state["question"],
         )
 
+        self._add_workflow_step(
+            state,
+            "📊 Analysis Agent",
+        )
+
         return state
 
     ###########################################################
@@ -375,6 +362,11 @@ class KnowledgeWorkflow:
         state["answer"] = self.llm.generate(
             question=state["question"],
             context=state["context"],
+        )
+
+        self._add_workflow_step(
+            state,
+            "🤖 LLM",
         )
 
         return state
