@@ -10,7 +10,7 @@ class ChatAgent:
     Handles greetings and casual conversation.
     """
 
-    def reply(
+    def respond(
         self,
         question: str,
     ) -> str:

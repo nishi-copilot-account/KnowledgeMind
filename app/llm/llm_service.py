@@ -16,6 +16,10 @@ class LLMService:
 
         self.model = "llama3.2:3b"
 
+    ###########################################################
+    # RAG Generation
+    ###########################################################
+
     def generate(
         self,
         question: str,
@@ -125,17 +129,39 @@ ANSWER
             "Generating response using Ollama"
         )
 
-        # --------------------------------------------------
-        # Debug
-        # --------------------------------------------------
-
         print("\n" + "=" * 60)
         print("CONTEXT SENT TO LLM")
         print("=" * 60)
         print(context)
         print("=" * 60)
 
-        # --------------------------------------------------
+        response = ollama.chat(
+            model=self.model,
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt,
+                }
+            ],
+        )
+
+        return response["message"]["content"]
+
+    ###########################################################
+    # Generic Prompt Generation
+    ###########################################################
+
+    def generate_prompt(
+        self,
+        prompt: str,
+    ) -> str:
+        """
+        Generate a response from a custom prompt.
+        """
+
+        logger.info(
+            "Generating custom prompt using Ollama"
+        )
 
         response = ollama.chat(
             model=self.model,

@@ -1,20 +1,22 @@
+"""
+Knowledge response model.
+"""
+
+from dataclasses import dataclass, field
+
+from app.knowledge.search_result import KnowledgeSearchResult
+
+
+@dataclass
+class KnowledgeResponse:
     """
-    Knowledge response model.
+    Final response returned to the UI.
     """
 
-    from dataclasses import dataclass
+    answer: str
 
-    from app.knowledge.search_result import KnowledgeSearchResult
+    sources: list[KnowledgeSearchResult] = field(default_factory=list)
 
+    workflow: list[str] = field(default_factory=list)
 
-    @dataclass
-    class KnowledgeResponse:
-        """
-        Final response returned to the UI.
-        """
-
-        answer: str
-
-        sources: list[KnowledgeSearchResult]
-
-        workflow: list[str]
+    explanation: list[str] = field(default_factory=list)

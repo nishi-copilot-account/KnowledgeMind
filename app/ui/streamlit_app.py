@@ -1,7 +1,11 @@
+import tempfile
+from pathlib import Path
+
 import streamlit as st
 
-from app.ui.sidebar import render_sidebar
+from app.services.indexing_service import IndexingService
 from app.services.knowledge_service import KnowledgeService
+from app.ui.sidebar import render_sidebar
 
 # --------------------------------------------------
 # Page Configuration
@@ -14,20 +18,69 @@ st.set_page_config(
 )
 
 # --------------------------------------------------
-# Initialize Knowledge Service
+# Initialize Services
 # --------------------------------------------------
 
 if "knowledge_service" not in st.session_state:
 
     st.session_state.knowledge_service = KnowledgeService()
 
+if "indexing_service" not in st.session_state:
+
+    st.session_state.indexing_service = IndexingService()
+
 knowledge_service = st.session_state.knowledge_service
+indexing_service = st.session_state.indexing_service
 
 # --------------------------------------------------
 # Sidebar
 # --------------------------------------------------
 
-render_sidebar()
+selected_document = render_sidebar()
+
+# --------------------------------------------------
+# Handle PDF Upload
+# --------------------------------------------------
+
+uploaded_file = st.session_state.get(
+    "uploaded_file"
+)
+
+index_clicked = st.session_state.get(
+    "index_clicked",
+    False,
+)
+
+if uploaded_file and index_clicked:
+
+    with st.spinner(
+        "📄 Indexing document..."
+    ):
+
+        with tempfile.NamedTemporaryFile(
+            delete=False,
+            suffix=".pdf",
+        ) as tmp:
+
+            tmp.write(
+                uploaded_file.getbuffer()
+            )
+
+            temp_path = Path(tmp.name)
+
+        try:
+
+            indexing_service.index_document(
+                str(temp_path)
+            )
+
+            st.success(
+                f"✅ {uploaded_file.name} indexed successfully!"
+            )
+
+        except Exception as ex:
+
+            st.error(str(ex))
 
 # --------------------------------------------------
 # Header
@@ -35,8 +88,12 @@ render_sidebar()
 
 st.title("🧠 KnowledgeMind")
 
-st.write(
-    "Agentic Personal Knowledge Assistant"
+st.markdown(
+    """
+### Agentic Personal Knowledge Assistant
+
+Upload • Search • Summarize • Compare • Analyze
+"""
 )
 
 # --------------------------------------------------
@@ -47,27 +104,45 @@ if "messages" not in st.session_state:
 
     st.session_state.messages = []
 
-# Display previous messages
+if not st.session_state.messages:
+
+    st.info(
+        """
+### 👋 Welcome to KnowledgeMind
+
+Try asking questions like:
+
+- 📄 Summarize this document
+- ⚖️ Compare both documents
+- 🔍 What is John's salary?
+- 📊 List all employees
+- 💡 Explain this document
+"""
+    )    
 
 for message in st.session_state.messages:
 
-    with st.chat_message(message["role"]):
+    with st.chat_message(
+        message["role"]
+    ):
 
-        st.markdown(message["content"])
+        st.markdown(
+            message["content"]
+        )
 
 # --------------------------------------------------
 # Chat Input
 # --------------------------------------------------
 
 question = st.chat_input(
-    "Ask your documents..."
+    "Ask a question about your indexed documents..."
 )
 
 if question:
 
-    # -------------------------------
-    # Show User Message
-    # -------------------------------
+    # --------------------------------------
+    # User Message
+    # --------------------------------------
 
     st.session_state.messages.append(
         {
@@ -80,17 +155,49 @@ if question:
 
         st.markdown(question)
 
-    # -------------------------------
+    # --------------------------------------
+    # Live Workflow Status
+    # --------------------------------------
+
+    status = st.status(
+        "🧠 Executing Agent Workflow...",
+        expanded=True,
+    )
+
+    status.write("🧠 Planner started")
+    status.write("🔍 Searching knowledge base")
+    status.write("🧩 Building context")
+    status.write("🤖 Generating response")
+
+    # --------------------------------------
     # Ask KnowledgeMind
-    # -------------------------------
+    # --------------------------------------
 
-    with st.spinner("🧠 Thinking..."):
+    response = knowledge_service.ask(
+        question=question,
+        selected_document=selected_document,
+    )
 
-        response = knowledge_service.ask(question)
+    # --------------------------------------
+    # Show executed workflow
+    # --------------------------------------
 
-    # -------------------------------
+    if response.workflow:
+
+        for step in response.workflow:
+
+            status.write(
+                f"✅ {step}"
+            )
+
+    status.update(
+        label="✅ KnowledgeMind Finished",
+        state="complete",
+    )
+
+    # --------------------------------------
     # Save Assistant Message
-    # -------------------------------
+    # --------------------------------------
 
     st.session_state.messages.append(
         {
@@ -99,90 +206,114 @@ if question:
         }
     )
 
-        # -------------------------------
-        # Display Assistant Response
-        # -------------------------------
+    # --------------------------------------
+    # Assistant Response
+    # --------------------------------------
 
-        with st.chat_message("assistant"):
+    with st.chat_message("assistant"):
+    
+        if selected_document:
 
-            st.markdown(response.answer)
+            st.info(
+                f"📄 Search Scope: **{selected_document}**"
+            )
 
-            # -----------------------------------
-            # Workflow
-            # -----------------------------------
+        else:
 
-            if response.workflow:
+            st.info(
+                "📚 Search Scope: **All Documents**"
+            )
+        
+        st.markdown(response.answer)
 
-        st.markdown("---")
-        st.caption("🧠 AI Workflow")
-
-        for step in response.workflow:
-            st.write(step)
-
-            # -----------------------------------
-            # Sources
-            # -----------------------------------
-
-            if response.sources:
-
-                st.markdown("---")
-
-                st.caption("📄 Sources")
-
-                shown = set()
-
-                for result in response.sources:
-
-                    key = (
-                        result.chunk.source_document,
-                        result.chunk.page_number,
-                    )
-
-                    if key in shown:
-                        continue
-
-                    shown.add(key)
-
-                    with st.expander(
-                        f"📄 {result.chunk.source_document} "
-                        f"(Page {result.chunk.page_number})",
-                        expanded=False,
-                    ):
-
-                        st.markdown(
-                            f"**Document:** "
-                            f"{result.chunk.source_document}"
-                        )
-
-                        st.markdown(
-                            f"**Page:** {result.chunk.page_number}"
-                        )
-
-                        st.divider()
-
-                        st.text(
-                            result.chunk.text
-                        )
-
-        # -----------------------------------
-        # Workflow Trace
-        # -----------------------------------
+        # ----------------------------------
+        # Workflow
+        # ----------------------------------
 
         if response.workflow:
-
-            st.markdown("---")
 
             with st.expander(
                 "🧠 Agent Workflow",
                 expanded=False,
             ):
 
-                st.caption(
-                    "Execution Trace"
-                )
-
                 for step in response.workflow:
 
                     st.write(
                         f"✅ {step}"
                     )
+        # ----------------------------------
+        # Why this Answer
+        # ----------------------------------
+
+        if response.explanation:
+
+            with st.expander(
+                "🧠 Why this answer?",
+                expanded=False,
+            ):
+
+                for item in response.explanation:
+
+                    st.write(
+                        f"✓ {item}"
+                    )
+
+        # ----------------------------------
+        # Sources
+        # ----------------------------------
+
+        if response.sources:
+
+            st.markdown("---")
+
+            st.caption(
+                "📄 Sources"
+            )
+
+            shown = set()
+
+            for result in response.sources:
+
+                key = (
+                    result.chunk.source_document,
+                    result.chunk.page_number,
+                )
+
+                if key in shown:
+                    continue
+
+                shown.add(key)
+
+                with st.expander(
+                    f"📄 {result.chunk.source_document} "
+                    f"(Page {result.chunk.page_number})"
+                ):
+
+                    st.markdown(
+                        f"**Document:** "
+                        f"{result.chunk.source_document}"
+                    )
+
+                    st.markdown(
+                        f"**Page:** "
+                        f"{result.chunk.page_number}"
+                    )
+
+                    st.divider()
+
+                    st.caption(
+                        f"Preview ({len(result.chunk.text)} characters)"
+                    )
+
+                    preview = result.chunk.text
+
+                    if len(preview) > 400:
+
+                        preview = preview[:400] + "..."
+
+                    st.text(preview)
+
+st.markdown("---")
+
+st.caption("Powered by LangGraph • Ollama • ChromaDB • Sentence Transformers • Streamlit")                    

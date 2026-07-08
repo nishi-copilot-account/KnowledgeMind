@@ -31,25 +31,31 @@ class ReasoningAgent:
         for result in results:
 
             text = result.chunk.text.strip()
+            text = re.sub(r"\n{3,}", "\n\n", text)
+            text = re.sub(r"[ \t]+", " ", text)
 
-            if text in seen:
+            normalized = text.lower().strip()
+
+            if normalized in seen:
                 continue
+
+            seen.add(normalized)
 
             seen.add(text)
 
             text = self._format_tables(text)
 
             section = (
+                "==================================================\n"
                 f"Document: {result.chunk.source_document}\n"
                 f"Page: {result.chunk.page_number}\n\n"
+                "==================================================\n\n"
                 f"{text}"
             )
 
             sections.append(section)
 
-        context = "\n\n--------------------\n\n".join(
-            sections
-        )
+        context = "\n\n".join(sections)
 
         ###########################################################
         # Agentic reasoning
@@ -111,13 +117,16 @@ class ReasoningAgent:
         if history:
 
             context = (
-                "Conversation History\n"
-                "====================\n"
-                f"{history}\n\n"
-                "Retrieved Knowledge\n"
-                "====================\n"
-                f"{context}"
-            )
+            "==============================\n"
+            "REQUEST\n"
+            "==============================\n"
+            f"{question}\n\n"
+            "==============================\n"
+            "RETRIEVED KNOWLEDGE\n"
+            "==============================\n"
+            f"Relevant Chunks: {len(results)}\n\n"
+            + context
+        )
 
         return context
 

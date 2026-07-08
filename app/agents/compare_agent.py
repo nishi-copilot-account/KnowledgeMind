@@ -3,44 +3,48 @@ Compare Agent.
 
 Compares retrieved knowledge from multiple documents.
 """
+from app.llm.llm_service import LLMService
 
 
 class CompareAgent:
 
-    def compare(
-        self,
-        context: str,
-    ) -> str:
+    def __init__(self):
+        self.llm = LLMService()
+
+    def compare(self, context: str) -> str:
         """
-        Return a comparison summary.
+        Compare multiple documents using the LLM.
         """
 
         if not context.strip():
             return "No information available for comparison."
 
-        sections = context.split("--------------------")
+        prompt = f"""
+    You are KnowledgeMind.
 
-        if len(sections) < 2:
-            return (
-                "Only one document was found. "
-                "Comparison requires multiple documents."
-            )
+    You are an expert document comparison assistant.
 
-        output = []
+    The following knowledge was retrieved from multiple documents.
 
-        for index, section in enumerate(
-            sections,
-            start=1,
-        ):
-            output.append(
-                f"Document {index}"
-            )
-            output.append(
-                "----------------"
-            )
-            output.append(
-                section.strip()
-            )
-            output.append("")
+    Compare the documents and produce a professional comparison.
 
-        return "\n".join(output)
+    Instructions:
+
+    - Use Markdown headings.
+    - Clearly identify similarities.
+    - Clearly identify differences.
+    - Highlight unique information in each document.
+    - If tables are present, compare them naturally.
+    - Do not invent information.
+    - End with a short conclusion.
+
+    ========================================
+
+    {context}
+
+    ========================================
+
+    Comparison:
+    """
+
+        return self.llm.generate_prompt(prompt)

@@ -21,11 +21,21 @@ class KnowledgeRetriever:
         self,
         question: str,
         top_k: int = 5,
+        source_document: str | None = None,
     ):
+        """
+        Retrieve the most relevant chunks.
 
-        embedding = self.embedding_service.embed(question)
+        If source_document is supplied, search only
+        within that document.
+        """
+
+        embedding = self.embedding_service.embed(
+            question
+        )
 
         return self.vector_store.search(
-            embedding,
-            top_k,
+            embedding=embedding,
+            top_k=top_k,
+            source_document=source_document,
         )

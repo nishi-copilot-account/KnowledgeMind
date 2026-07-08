@@ -24,22 +24,20 @@ class VectorStore:
             name="knowledgemind"
         )
 
+    # --------------------------------------------------
+    # Add
+    # --------------------------------------------------
+
     def add(
         self,
         chunk: KnowledgeChunk,
         embedding: list[float],
     ) -> None:
-        """
-        Store a knowledge chunk in ChromaDB.
-        """
 
         self.collection.add(
             ids=[chunk.chunk_id],
-
             embeddings=[embedding],
-
             documents=[chunk.text],
-
             metadatas=[
                 {
                     "source_document": chunk.source_document,
@@ -54,10 +52,15 @@ class VectorStore:
             chunk.chunk_id,
         )
 
+    # --------------------------------------------------
+    # Search
+    # --------------------------------------------------
+
     def search(
         self,
         embedding: list[float],
         top_k: int = 5,
+        source_document: str | None = None,
     ):
         """
         Search for the most similar knowledge chunks.
@@ -68,10 +71,35 @@ class VectorStore:
             top_k,
         )
 
-        results = self.collection.query(
-            query_embeddings=[embedding],
-            n_results=top_k,
-        )
+        query = {
+            "query_embeddings": [embedding],
+            "n_results": top_k,
+        }
+
+        if source_document:
+
+            logger.info(
+                "Filtering search by document: %s",
+                source_document,
+            )
+
+            query["where"] = {
+                "source_document": source_document,
+            }
+
+            print("=" * 60)
+            print("CHROMA QUERY =", query)
+            print("=" * 60)
+
+        results = self.collection.query(**query)
+        print("=" * 60)
+
+        print("Retrieved Documents")
+
+        for metadata in results["metadatas"][0]:
+            print(metadata["source_document"])
+
+        print("=" * 60)
 
         search_results = []
 
@@ -104,13 +132,14 @@ class VectorStore:
 
         return search_results
 
+    # --------------------------------------------------
+    # Document Exists
+    # --------------------------------------------------
+
     def document_exists(
         self,
         document_name: str,
     ) -> bool:
-        """
-        Check whether a document has already been indexed.
-        """
 
         results = self.collection.get(
             where={
@@ -120,11 +149,11 @@ class VectorStore:
 
         return len(results["ids"]) > 0
 
+    # --------------------------------------------------
+    # Statistics
+    # --------------------------------------------------
 
     def statistics(self) -> dict:
-        """
-        Return collection statistics.
-        """
 
         results = self.collection.get()
 

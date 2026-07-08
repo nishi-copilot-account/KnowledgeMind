@@ -85,7 +85,7 @@ class KnowledgeWorkflow:
         self.graph.add_edge("generate", END)
 
     ###########################################################
-    # Helper
+    # Helpers
     ###########################################################
 
     def _add_workflow_step(
@@ -98,6 +98,17 @@ class KnowledgeWorkflow:
             "workflow_steps",
             [],
         ).append(step)
+
+    def _add_explanation(
+        self,
+        state: KnowledgeState,
+        explanation: str,
+    ) -> None:
+
+        state.setdefault(
+            "explanation",
+            [],
+        ).append(explanation)
 
     ###########################################################
     # Planner
@@ -124,14 +135,19 @@ class KnowledgeWorkflow:
 
         state["action"] = action
 
+        self._add_explanation(
+            state,
+            f"Planner selected '{action}' workflow based on the user's question.",
+        )
+
         self._add_workflow_step(
             state,
-            "🧠 Planner",
+            "🧠 Planner\n"
+            f"   ✓ Selected '{action}' workflow",
         )
 
         return state
 
-    ###########################################################
 
     def route(
         self,
@@ -158,6 +174,11 @@ class KnowledgeWorkflow:
             "💬 Chat Agent",
         )
 
+        self._add_explanation(
+            state,
+            "Handled the request as a general conversation without retrieving documents.",
+        )
+
         return state
 
     ###########################################################
@@ -170,8 +191,12 @@ class KnowledgeWorkflow:
     ) -> KnowledgeState:
 
         results = self.retriever.retrieve(
-            state["question"],
+            question=state["question"],
             top_k=5,
+            source_document=state.get(
+                "selected_document",
+                "",
+            ),
         )
 
         context = self.reasoner.prepare_context(
@@ -182,15 +207,57 @@ class KnowledgeWorkflow:
                 "",
             ),
         )
-
+        state["search_results"] = results
         state["answer"] = self.summary_agent.summarize(
             context,
         )
 
         self._add_workflow_step(
             state,
-            "📝 Summary Agent",
+            f"🔍 Retriever\n"
+            f"   ✓ Search Scope: {state.get('selected_document') or 'All Documents'}\n"
+            f"   ✓ Retrieved {len(results)} chunks",
         )
+
+        self._add_workflow_step(
+            state,
+            "🧩 Context Builder\n"
+            "   ✓ Prepared document context\n"
+            "   ✓ Removed duplicate chunks",
+        )
+
+        self._add_workflow_step(
+            state,
+            "📝 Summary Agent\n"
+            "   ✓ Generated concise summary",
+        )
+
+        self._add_explanation(
+            state,
+            "Planner recognized a summarization request.",
+        )
+
+        self._add_explanation(
+            state,
+            f"Search scope: {state.get('selected_document') or 'All Documents'}.",
+        )
+
+        self._add_explanation(
+            state,
+            f"Retrieved {len(results)} relevant chunks.",
+        )
+
+        self._add_explanation(
+            state,
+            "Built a unified document context.",
+        )
+
+        self._add_explanation(
+            state,
+            "Generated the final summary using the retrieved content.",
+        )
+
+
 
         return state
 
@@ -204,8 +271,21 @@ class KnowledgeWorkflow:
     ) -> KnowledgeState:
 
         results = self.retriever.retrieve(
-            state["question"],
-            top_k=10,
+            question=state["question"],
+            top_k=5,
+            source_document=state.get(
+                "selected_document",
+                "",
+            ),
+        )
+       
+        state["search_results"] = results
+
+        self._add_workflow_step(
+            state,
+            f"🔍 Retriever\n"
+            f"   ✓ Search Scope: {state.get('selected_document') or 'All Documents'}\n"
+            f"   ✓ Retrieved {len(results)} relevant chunks",
         )
 
         context = self.reasoner.prepare_context(
@@ -218,13 +298,62 @@ class KnowledgeWorkflow:
             action="compare",
         )
 
+        self._add_workflow_step(
+        state,
+        "🧩 Context Builder\n"
+        "   ✓ Prepared document context\n"
+        "   ✓ Removed duplicate chunks\n"
+        "   ✓ Added conversation history"
+            )
+
         state["answer"] = self.compare_agent.compare(
             context,
         )
 
         self._add_workflow_step(
             state,
-            "⚖️ Compare Agent",
+            "⚖️ Compare Agent\n"
+            "   ✓ Compared retrieved documents"
+        )
+
+        self._add_explanation(
+            state,
+            f"Retrieved {len(results)} relevant chunks to compare information across documents.",
+        )
+
+        self._add_explanation(
+            state,
+            "Planner recognized that the user requested a document comparison.",
+        )
+
+        self._add_explanation(
+            state,
+            "Prepared a comparison context from the retrieved documents.",
+        )
+
+        self._add_explanation(
+            state,
+            "The Compare Agent identified similarities and differences between the retrieved documents.",
+        )
+
+        self._add_explanation(
+            state,
+            f"Search was restricted to: {state.get('selected_document') or 'All Documents'}.",
+        )
+
+        self._add_explanation(
+            state,
+            f"{len(results)} relevant chunks were retrieved from the vector database.",
+        )
+
+        self._add_explanation(
+            state,
+            "The retrieved chunks were combined into a comparison context.",
+        )
+
+        self._add_explanation(
+            state,
+            "The Compare Agent generated the final comparison using the retrieved documents.",
         )
 
         return state
@@ -260,6 +389,20 @@ class KnowledgeWorkflow:
             "✍️ Question Rewriter",
         )
 
+        if rewritten != state["original_question"]:
+
+            self._add_explanation(
+                state,
+                "The follow-up question was rewritten into a standalone question using conversation history.",
+            )
+
+        else:
+
+            self._add_explanation(
+                state,
+                "The original question was already clear and required no rewriting.",
+            )
+
         return state
 
     ###########################################################
@@ -274,17 +417,31 @@ class KnowledgeWorkflow:
         logger.info(
             "Executing Retrieve Node"
         )
-
+        logger.info(
+            "Search Scope: %s",
+            state.get("selected_document") or "All Documents",
+        )
         results = self.retriever.retrieve(
-            state["question"],
-            top_k=3,
+            question=state["question"],
+            top_k=5,
+            source_document=state.get(
+                "selected_document",
+                "",
+    ),
         )
 
         state["search_results"] = results
 
         self._add_workflow_step(
             state,
-            "🔍 Retriever",
+            f"🔍 Retriever\n"
+            f"   ✓ Search Scope: {state.get('selected_document') or 'All Documents'}\n"
+            f"   ✓ Retrieved {len(results)} relevant chunks",
+        )
+
+        self._add_explanation(
+            state,
+            f"Retrieved {len(results)} relevant knowledge chunks from the vector database.",
         )
 
         return state
@@ -316,9 +473,15 @@ class KnowledgeWorkflow:
 
         self._add_workflow_step(
             state,
-            "🧠 Reasoning Agent",
-        )
+            "🧠 Reasoning Agent\n"
+            "   ✓ Combined retrieved knowledge\n"
+            "   ✓ Included conversation history",
+     )
 
+        self._add_explanation(
+            state,
+            "Prepared structured context by combining retrieved knowledge and conversation history.",
+        )
         return state
 
     ###########################################################
@@ -344,6 +507,11 @@ class KnowledgeWorkflow:
             "📊 Analysis Agent",
         )
 
+        self._add_explanation(
+            state,
+            "Applied deterministic analysis where applicable before generating the answer.",
+        )
+
         return state
 
     ###########################################################
@@ -366,13 +534,24 @@ class KnowledgeWorkflow:
 
         self._add_workflow_step(
             state,
-            "🤖 LLM",
+            "🤖 Response Generator\n"
+            "   ✓ Generated final answer",
+        )
+
+        self._add_explanation(
+            state,
+            "Generated the final natural language response using the prepared context.",
         )
 
         return state
 
     ###########################################################
 
+    ###########################################################
+    # Helpers
+    ###########################################################
+
+    
     def compile(self):
 
         return self.graph.compile()
