@@ -20,11 +20,15 @@ class IndexingService:
     def index_document(
         self,
         file_path: str,
-    ):
+        original_filename: str,
+    ) -> bool:
 
         print("\nProcessing document...")
 
-        knowledge = self.pipeline.process(file_path)
+        knowledge = self.pipeline.process(
+            file_path=file_path,
+            original_filename=original_filename,
+        )
 
         # ---------------------------------------
         # Skip duplicate documents
@@ -37,7 +41,7 @@ class IndexingService:
             print("\nDocument already indexed.")
             print("Skipping duplicate indexing.")
 
-            return
+            return False
 
         chunks = self.chunk_builder.build(
             knowledge
@@ -55,3 +59,17 @@ class IndexingService:
             )
 
         print(f"\nIndexed {len(chunks)} chunks successfully.")
+
+        return True
+
+    def delete_document(
+        self,
+        filename: str,
+    ):
+        """
+        Delete an indexed document.
+        """
+
+        self.vector_store.delete_document(
+            filename,
+        )

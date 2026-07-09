@@ -39,48 +39,84 @@ indexing_service = st.session_state.indexing_service
 selected_document = render_sidebar()
 
 # --------------------------------------------------
-# Handle PDF Upload
+# Handle Document Upload
 # --------------------------------------------------
 
-uploaded_file = st.session_state.get(
-    "uploaded_file"
-)
+uploaded_file = st.session_state.get("uploaded_file")
 
-index_clicked = st.session_state.get(
-    "index_clicked",
-    False,
-)
+if uploaded_file is not None:
 
-if uploaded_file and index_clicked:
+    print("=" * 60)
+    print("Name :", uploaded_file.name)
+    print("Size :", uploaded_file.size)
+    print("=" * 60)
 
-    with st.spinner(
-        "📄 Indexing document..."
+if uploaded_file is not None:
+
+    current_file_id = (
+        uploaded_file.name,
+        uploaded_file.size,
+    )
+
+    if current_file_id != st.session_state.get(
+        "last_uploaded_file"
     ):
 
-        with tempfile.NamedTemporaryFile(
-            delete=False,
-            suffix=".pdf",
-        ) as tmp:
+        with st.spinner("📄 Indexing document..."):
 
-            tmp.write(
-                uploaded_file.getbuffer()
-            )
+            extension = Path(
+                uploaded_file.name
+            ).suffix
 
-            temp_path = Path(tmp.name)
+            temp_path = None
 
-        try:
+            with tempfile.NamedTemporaryFile(
+                delete=False,
+                suffix=extension,
+            ) as tmp:
 
-            indexing_service.index_document(
-                str(temp_path)
-            )
+                tmp.write(
+                    uploaded_file.getbuffer()
+                )
 
-            st.success(
-                f"✅ {uploaded_file.name} indexed successfully!"
-            )
+                tmp.flush()
 
-        except Exception as ex:
+                print("=" * 60)
+                print("Temp file:", tmp.name)
+                print("Temp size:", Path(tmp.name).stat().st_size)
+                print("=" * 60)
 
-            st.error(str(ex))
+                temp_path = Path(tmp.name)
+
+            try:
+
+                indexed = indexing_service.index_document(
+                    file_path=str(temp_path),
+                    original_filename=uploaded_file.name,
+                )
+
+                if indexed:
+
+                    st.success(
+                        f"✅ {uploaded_file.name} added to the Knowledge Base."
+                    )
+
+                else:
+
+                    st.info(
+                        f"ℹ️ {uploaded_file.name} is already in the Knowledge Base."
+                    )
+
+                st.session_state["last_uploaded_file"] = current_file_id
+
+            except Exception as ex:
+
+                st.exception(ex)
+
+            finally:
+
+                if temp_path and temp_path.exists():
+                    temp_path.unlink()   
 
 # --------------------------------------------------
 # Header

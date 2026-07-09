@@ -18,7 +18,7 @@ from app.utils.logger import logger
 
 
 class PDFReader(BaseReader):
-    def read(self, file_path: str) -> KnowledgeDocument:
+    def read(self, file_path: str, original_filename: str | None = None,) -> KnowledgeDocument:
         path = Path(file_path)
 
         if not path.exists():
@@ -69,7 +69,7 @@ class PDFReader(BaseReader):
         logger.info("PDF Loaded Successfully")
 
         return KnowledgeDocument(
-            filename=path.name,
+            filename=original_filename or path.name,
             metadata=metadata,
             pages=pages,
         )

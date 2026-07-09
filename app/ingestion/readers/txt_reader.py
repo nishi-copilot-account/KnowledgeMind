@@ -18,7 +18,7 @@ class TXTReader(BaseReader):
     Reads plain text (.txt) documents.
     """
 
-    def read(self, file_path: str) -> KnowledgeDocument:
+    def read(self, file_path: str, original_filename: str | None = None) -> KnowledgeDocument:
 
         path = Path(file_path)
 
@@ -46,7 +46,7 @@ class TXTReader(BaseReader):
         logger.info("TXT Loaded Successfully")
 
         return KnowledgeDocument(
-            filename=path.name,
+            filename=original_filename or path.name,
             metadata=metadata,
             pages=[page],
         )

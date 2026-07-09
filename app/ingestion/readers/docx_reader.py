@@ -20,19 +20,29 @@ class DOCXReader(BaseReader):
     Reads Microsoft Word (.docx) documents.
     """
 
-    def read(self, file_path: str) -> KnowledgeDocument:
+    def read(self, file_path: str, original_filename: str | None = None) -> KnowledgeDocument:
 
         path = Path(file_path)
 
         if not path.exists():
             raise FileNotFoundError(f"{path} does not exist.")
 
-        if path.stat().st_size == 0:
-            raise ValueError(f"{path.name} is empty.")
-
+        logger.info("DOCX size: %s bytes", path.stat().st_size)
         logger.info("Opening DOCX : %s", path.name)
 
-        document = Document(path)
+        try:
+
+            document = Document(path)
+
+        except Exception as ex:
+
+            logger.exception(
+                "Unable to open DOCX"
+            )
+
+            raise RuntimeError(
+                f"{path.name} is not a valid DOCX document."
+            ) from ex
 
         paragraphs = []
 
@@ -49,6 +59,11 @@ class DOCXReader(BaseReader):
                 paragraphs.append(text)
 
         page_text = "\n".join(paragraphs)
+
+        logger.info(
+            "Extracted %s characters from DOCX",
+            len(page_text),
+        )
 
         core = document.core_properties
 
@@ -75,7 +90,7 @@ class DOCXReader(BaseReader):
         # Extract Word tables into KnowledgeTable objects.
 
         return KnowledgeDocument(
-            filename=path.name,
+            filename=original_filename or path.name,
             metadata=metadata,
             pages=[page],
         )

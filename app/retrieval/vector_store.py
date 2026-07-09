@@ -171,3 +171,24 @@ class VectorStore:
             "document_count": len(documents),
             "chunk_count": len(results["ids"]),
         }
+
+    def list_documents(self) -> list[str]:
+        """
+        Return the list of indexed document names.
+        """
+
+        return self.statistics()["documents"]
+
+    def delete_document(
+        self,
+        source_document: str,
+    ):
+        """
+        Delete all chunks belonging to a document.
+        """
+
+        self.collection.delete(
+            where={
+                "source_document": source_document,
+            }
+        )
